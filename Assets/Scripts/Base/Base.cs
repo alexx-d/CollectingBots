@@ -12,22 +12,21 @@ public class Base : MonoBehaviour
     [SerializeField] private float _dispatchInterval = 0.2f;
 
     private readonly List<Unit> _freeUnits = new List<Unit>();
-    private readonly Queue<Resource> _availableResources = new Queue<Resource>();
 
     private void OnEnable()
     {
-        _scanner.OnResourcesDiscovered += HandleResourcesDiscovered;
-        _storage.OnUnitRegistered += HandleUnitRegistered;
+        _scanner.ResourcesDiscovered += HandleResourcesDiscovered;
+        _storage.UnitRegistered += HandleUnitRegistered;
     }
 
     private void OnDisable()
     {
-        _scanner.OnResourcesDiscovered -= HandleResourcesDiscovered;
-        _storage.OnUnitRegistered -= HandleUnitRegistered;
+        _scanner.ResourcesDiscovered -= HandleResourcesDiscovered;
+        _storage.UnitRegistered -= HandleUnitRegistered;
 
         foreach (var unit in _storage.AllUnits)
         {
-            unit.OnUnitBecameFree -= HandleUnitBecameFree;
+            unit.UnitBecameFree -= HandleUnitBecameFree;
         }
     }
 
@@ -54,7 +53,7 @@ public class Base : MonoBehaviour
     private void HandleUnitRegistered(Unit unit)
     {
         unit.Initialize(_storage);
-        unit.OnUnitBecameFree += HandleUnitBecameFree;
+        unit.UnitBecameFree += HandleUnitBecameFree;
         _freeUnits.Add(unit);
     }
 
@@ -62,10 +61,7 @@ public class Base : MonoBehaviour
     {
         foreach (var resource in resources)
         {
-            if (_availableResources.Contains(resource) == false && resource.IsTargeted == false)
-            {
-                _availableResources.Enqueue(resource);
-            }
+            _storage.RegisterFoundResource(resource);
         }
     }
 
@@ -90,13 +86,13 @@ public class Base : MonoBehaviour
 
     private void TryAssignCommands()
     {
-        while (_freeUnits.Count > 0 && _availableResources.Count > 0)
+        while (_freeUnits.Count > 0)
         {
-            Resource resource = _availableResources.Dequeue();
+            Resource resource = _storage.GetTargetResourceForUnit();
 
-            if (resource == null || resource.IsTargeted)
+            if (resource == null)
             {
-                continue;
+                break;
             }
 
             Unit unit = _freeUnits[0];

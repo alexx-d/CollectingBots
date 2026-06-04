@@ -13,7 +13,7 @@ public class BaseScanner : MonoBehaviour
     private Collider[] _scanBuffer;
     private readonly List<Resource> _discoveredResources = new List<Resource>();
 
-    public event Action<List<Resource>> OnResourcesDiscovered;
+    public event Action<List<Resource>> ResourcesDiscovered;
 
     private void Awake()
     {
@@ -53,10 +53,7 @@ public class BaseScanner : MonoBehaviour
 
             if (collider.TryGetComponent<Resource>(out var resource))
             {
-                if (resource.IsTargeted == false)
-                {
-                    _discoveredResources.Add(resource);
-                }
+                _discoveredResources.Add(resource);
             }
 
             _scanBuffer[i] = null;
@@ -64,7 +61,7 @@ public class BaseScanner : MonoBehaviour
 
         if (_discoveredResources.Count > 0)
         {
-            OnResourcesDiscovered?.Invoke(_discoveredResources);
+            ResourcesDiscovered?.Invoke(_discoveredResources);
         }
     }
 

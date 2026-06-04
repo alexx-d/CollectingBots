@@ -10,7 +10,7 @@ public class InputReader : MonoBehaviour, PlayerInput.IPlayerActions
     public Vector2 MousePosition { get; private set; }
     public float ZoomInput { get; private set; }
 
-    public event Action OnLeftClickPressed;
+    public event Action LeftClickPressed;
 
     private void Awake()
     {
@@ -41,7 +41,7 @@ public class InputReader : MonoBehaviour, PlayerInput.IPlayerActions
     {
         if (context.performed)
         {
-            OnLeftClickPressed?.Invoke();
+            LeftClickPressed?.Invoke();
         }
     }
 }

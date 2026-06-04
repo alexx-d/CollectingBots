@@ -7,9 +7,8 @@ public class Resource : MonoBehaviour
     private Collider _collider;
     private Transform _transform;
 
-    public event Action<Resource> OnResourceCollected;
+    public event Action<Resource> ResourceCollected;
 
-    public bool IsTargeted { get; private set; }
 
     private void Awake()
     {
@@ -20,20 +19,9 @@ public class Resource : MonoBehaviour
     public void PrepareForSpawn()
     {
         _collider.enabled = true;
-        IsTargeted = false;
     }
 
-    public void Target()
-    {
-        IsTargeted = true;
-    }
-
-    public void Untarget()
-    {
-        IsTargeted = false;
-    }
-
-    public void Collect(Transform attachPoint)
+    public void PickUp(Transform attachPoint)
     {
         _collider.enabled = false;
         _transform.SetParent(attachPoint);
@@ -41,8 +29,8 @@ public class Resource : MonoBehaviour
         _transform.localRotation = Quaternion.identity;
     }
 
-    public void Disable()
+    public void Collect()
     {
-        OnResourceCollected?.Invoke(this);
+        ResourceCollected?.Invoke(this);
     }
 }

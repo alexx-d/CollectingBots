@@ -19,18 +19,19 @@ public class Unit : MonoBehaviour
     private BaseStorage _assignedStorage;
     private Resource _targetResource;
 
-    public event Action<Unit> OnUnitBecameFree;
+    public event Action<Unit> UnitBecameFree;
+    public event Action<Resource> ResourceCollected;
 
     public bool IsFree => _currentState == UnitState.Idle;
 
     private void OnEnable()
     {
-        _collector.OnResourceContacted += HandleResourceContact;
+        _collector.ResourceContacted += HandleResourceContact;
     }
 
     private void OnDisable()
     {
-        _collector.OnResourceContacted -= HandleResourceContact;
+        _collector.ResourceContacted -= HandleResourceContact;
     }
 
     public void Initialize(BaseStorage homeBaseStorage)
@@ -42,7 +43,6 @@ public class Unit : MonoBehaviour
     public void AssignResource(Resource resource)
     {
         _targetResource = resource;
-        _targetResource.Target();
         _currentState = UnitState.MovingToResource;
         _mover.SetDestination(_targetResource.transform.position);
     }
@@ -64,7 +64,7 @@ public class Unit : MonoBehaviour
 
     private void PickUpResource()
     {
-        _targetResource.Collect(_backpackAttachPoint);
+        _targetResource.PickUp(_backpackAttachPoint);
         _currentState = UnitState.ReturningToBase;
         _mover.SetDestination(_assignedStorage.transform.position, _assignedStorage.DeliveryRadius);
     }
@@ -79,10 +79,12 @@ public class Unit : MonoBehaviour
 
     private void DeliverResource()
     {
-        _targetResource.Disable();
+        _targetResource.Collect();
+        
+        _assignedStorage.AddResource();
+        _assignedStorage.RemoveResourceFromMap(_targetResource);
         _targetResource = null;
 
-        _assignedStorage.AddResource();
         ResetToIdle();
     }
 
@@ -90,6 +92,6 @@ public class Unit : MonoBehaviour
     {
         _currentState = UnitState.Idle;
         _mover.Stop();
-        OnUnitBecameFree?.Invoke(this);
+        UnitBecameFree?.Invoke(this);
     }
 }

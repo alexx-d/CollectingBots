@@ -3,13 +3,13 @@ using UnityEngine;
 
 public class UnitCollector : MonoBehaviour
 {
-    public event Action<Resource> OnResourceContacted;
+    public event Action<Resource> ResourceContacted;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.TryGetComponent<Resource>(out var resource))
         {
-            OnResourceContacted?.Invoke(resource);
+            ResourceContacted?.Invoke(resource);
         }
     }
 }

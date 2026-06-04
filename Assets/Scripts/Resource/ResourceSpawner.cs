@@ -9,9 +9,7 @@ public class ResourceSpawner : ObjectPool<Resource>
     [SerializeField] private float _spawnInterval;
     [SerializeField] private float _spawnHeightY = 0.5f;
 
-    public static event Action<Resource> OnResourceSpawned;
-
-    private Coroutine _spawnCoroutine;
+    public static event Action<Resource> ResourceSpawned;
 
     private void Start()
     {
@@ -39,9 +37,9 @@ public class ResourceSpawner : ObjectPool<Resource>
         resource.transform.rotation = Quaternion.identity;
         resource.PrepareForSpawn();
 
-        resource.OnResourceCollected += HandleResourceCollected;
+        resource.ResourceCollected += HandleResourceCollected;
 
-        OnResourceSpawned?.Invoke(resource);
+        ResourceSpawned?.Invoke(resource);
     }
 
     private Vector3 GetRandomSpawnPosition()
@@ -59,7 +57,7 @@ public class ResourceSpawner : ObjectPool<Resource>
 
     private void HandleResourceCollected(Resource resource)
     {
-        resource.OnResourceCollected -= HandleResourceCollected;
+        resource.ResourceCollected -= HandleResourceCollected;
         ReturnToPool(resource);
     }
 
