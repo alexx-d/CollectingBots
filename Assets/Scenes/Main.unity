@@ -2062,10 +2062,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Base
       objectReference: {fileID: 0}
-    - target: {fileID: 5911862413531890496, guid: 8227dc7fbd7e5be44a398a93635e9665, type: 3}
-      propertyPath: _scanRadius
-      value: 30
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

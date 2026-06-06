@@ -11,6 +11,7 @@ public class Base : MonoBehaviour
     [SerializeField] private BaseScanner _scanner;
 
     [SerializeField] private int _initialUnitCount = 3;
+    [SerializeField] private int _unitCost = 3;
     [SerializeField] private float _dispatchInterval = 0.2f;
 
     private readonly List<Unit> _freeUnits = new List<Unit>();
@@ -19,12 +20,14 @@ public class Base : MonoBehaviour
     {
         _scanner.ResourcesDiscovered += HandleResourcesDiscovered;
         _unitRegistry.Registered += HandleUnitRegistered;
+        _storage.ResourceCountChanged += HandleResourceCountChanged;
     }
 
     private void OnDisable()
     {
         _scanner.ResourcesDiscovered -= HandleResourcesDiscovered;
         _unitRegistry.Registered -= HandleUnitRegistered;
+        _storage.ResourceCountChanged -= HandleResourceCountChanged;
 
         foreach (var unit in _unitRegistry.AllUnits)
         {
@@ -80,6 +83,15 @@ public class Base : MonoBehaviour
     private void HandleResourceDelivered(Resource resource)
     {
         _resourceRegistry.Unregister(resource);
+    }
+
+    private void HandleResourceCountChanged(int currentCount)
+    {
+        if (currentCount >= _unitCost)
+        {
+            _storage.SpendResources(_unitCost);
+            CreateAndRegisterUnit();
+        }
     }
 
     private IEnumerator DispatchRoutine()

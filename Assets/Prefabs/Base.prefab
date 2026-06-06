@@ -327,6 +327,7 @@ MonoBehaviour:
   _unitSpawner: {fileID: 2145182812961505244}
   _scanner: {fileID: 5911862413531890496}
   _initialUnitCount: 3
+  _unitCost: 3
   _dispatchInterval: 0.2
 --- !u!114 &5911862413531890496
 MonoBehaviour:
@@ -340,7 +341,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d22c7d333edab14da959b2a2276e433, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _scanRadius: 25
+  _scanRadius: 30
   _scanInterval: 1
   _resourceLayer:
     serializedVersion: 2
@@ -358,7 +359,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 494776ccbe151c44bb1a69a92eda664a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _deliveryRadius: 2
+  _deliveryRadius: 4
 --- !u!114 &2145182812961505244
 MonoBehaviour:
   m_ObjectHideFlags: 0

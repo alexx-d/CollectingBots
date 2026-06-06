@@ -1,35 +1,17 @@
-using DG.Tweening;
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
-    private enum UnitState
-    {
-        Idle,
-        MovingToResource,
-        ReturningToBase
-    }
-
     [SerializeField] private UnitMover _mover;
     [SerializeField] private Transform _backpackAttachPoint;
 
-    private UnitState _currentState = UnitState.Idle;
     private BaseStorage _assignedStorage;
-    private Resource _targetResource;
+    private Coroutine _currentRoutine;
 
     public event Action<Unit> BecameFree;
     public event Action<Resource> ResourceDelivered;
-
-    private void OnEnable()
-    {
-        _mover.DestinationReached += HandleDestinationReached;
-    }
-
-    private void OnDisable()
-    {
-        _mover.DestinationReached -= HandleDestinationReached;
-    }
 
     public void Initialize(BaseStorage homeBaseStorage)
     {
@@ -39,51 +21,32 @@ public class Unit : MonoBehaviour
 
     public void AssignResource(Resource resource)
     {
-        _targetResource = resource;
-        _currentState = UnitState.MovingToResource;
-        _mover.SetDestination(_targetResource.transform.position);
-    }
-
-    private void HandleDestinationReached()
-    {
-        switch (_currentState)
+        if (_currentRoutine != null)
         {
-            case UnitState.MovingToResource:
-                PickUpResource();
-                break;
-
-            case UnitState.ReturningToBase:
-                DeliverResource();
-                break;
-
-            default:
-                ResetToIdle();
-                break;
+            StopCoroutine(_currentRoutine);
         }
+
+        _currentRoutine = StartCoroutine(ProcessDeliveryRoutine(resource));
     }
 
-    private void PickUpResource()
+    private IEnumerator ProcessDeliveryRoutine(Resource resource)
     {
-        _targetResource.PickUp(_backpackAttachPoint);
-        _currentState = UnitState.ReturningToBase;
-        _mover.SetDestination(_assignedStorage.transform.position, _assignedStorage.DeliveryRadius);
-    }
+        yield return _mover.MoveTo(resource.transform.position);
 
-    private void DeliverResource()
-    {
-        _targetResource.Collect();
+        resource.PickUp(_backpackAttachPoint);
+
+        yield return _mover.MoveTo(_assignedStorage.transform.position, _assignedStorage.DeliveryRadius);
+
+        resource.Collect();
         _assignedStorage.AddResource();
-
-        ResourceDelivered?.Invoke(_targetResource);
-        _targetResource = null;
+        ResourceDelivered?.Invoke(resource);
 
         ResetToIdle();
     }
 
     private void ResetToIdle()
     {
-        _currentState = UnitState.Idle;
-        _mover.Stop();
+        _currentRoutine = null;
         BecameFree?.Invoke(this);
     }
 }
