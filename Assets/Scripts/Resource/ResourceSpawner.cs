@@ -1,19 +1,15 @@
-using System;
 using System.Collections;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
-public class ResourceSpawner : ObjectPool<Resource>
+public class ResourceSpawner : MonoBehaviour
 {
+    [SerializeField] private ResourcePool _pool;
     [SerializeField] private Vector3 _spawnAreaSize;
     [SerializeField] private float _spawnInterval;
     [SerializeField] private float _spawnHeightY = 0.5f;
 
-    public static event Action<Resource> ResourceSpawned;
-
     private void Start()
     {
-        InitializePool();
         StartCoroutine(SpawnRoutine());
     }
 
@@ -32,14 +28,12 @@ public class ResourceSpawner : ObjectPool<Resource>
     {
         Vector3 spawnPosition = GetRandomSpawnPosition();
 
-        Resource resource = Get();
+        Resource resource = _pool.Get();
         resource.transform.position = spawnPosition;
         resource.transform.rotation = Quaternion.identity;
         resource.PrepareForSpawn();
 
         resource.ResourceCollected += HandleResourceCollected;
-
-        ResourceSpawned?.Invoke(resource);
     }
 
     private Vector3 GetRandomSpawnPosition()
@@ -58,7 +52,7 @@ public class ResourceSpawner : ObjectPool<Resource>
     private void HandleResourceCollected(Resource resource)
     {
         resource.ResourceCollected -= HandleResourceCollected;
-        ReturnToPool(resource);
+        _pool.ReturnToPool(resource);
     }
 
     private void OnDrawGizmosSelected()

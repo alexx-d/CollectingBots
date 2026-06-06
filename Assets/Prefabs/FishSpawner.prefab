@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6683957673086466134}
   - component: {fileID: 7547326259836537574}
+  - component: {fileID: 1407232612776946131}
   m_Layer: 0
   m_Name: FishSpawner
   m_TagString: Untagged
@@ -44,8 +45,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d73c253b97c2cd4a93471f541a3a651, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefabs:
-  - {fileID: 5235227478689527641, guid: c597f7b56de505e45910a5542dac477d, type: 3}
-  _initialSize: 5
+  _pool: {fileID: 0}
   _spawnAreaSize: {x: 20, y: 0, z: 27.77}
   _spawnInterval: 5
+  _spawnHeightY: 0.5
+--- !u!114 &1407232612776946131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9220877800353488601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab0fc43f2c6b90044b09d19b9b3410dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _prefabs:
+  - {fileID: 5235227478689527641, guid: c597f7b56de505e45910a5542dac477d, type: 3}
+  - {fileID: 5235227478689527641, guid: 8fffdc9748bfa83439edac66c5eb2d96, type: 3}
+  - {fileID: 5235227478689527641, guid: c5dc431ccf368a640bf8a00bfc38532d, type: 3}
+  - {fileID: 5235227478689527641, guid: 4e1ed42385bc2c04bb1eff84c1273b85, type: 3}
+  - {fileID: 5235227478689527641, guid: 7187dcc0cf9d5524abfd9f7a9ff79cc3, type: 3}
+  _initialSize: 10

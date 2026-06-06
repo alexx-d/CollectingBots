@@ -12,26 +12,23 @@ public class Unit : MonoBehaviour
     }
 
     [SerializeField] private UnitMover _mover;
-    [SerializeField] private UnitCollector _collector;
     [SerializeField] private Transform _backpackAttachPoint;
 
     private UnitState _currentState = UnitState.Idle;
     private BaseStorage _assignedStorage;
     private Resource _targetResource;
 
-    public event Action<Unit> UnitBecameFree;
-    public event Action<Resource> ResourceCollected;
-
-    public bool IsFree => _currentState == UnitState.Idle;
+    public event Action<Unit> BecameFree;
+    public event Action<Resource> ResourceDelivered;
 
     private void OnEnable()
     {
-        _collector.ResourceContacted += HandleResourceContact;
+        _mover.DestinationReached += HandleDestinationReached;
     }
 
     private void OnDisable()
     {
-        _collector.ResourceContacted -= HandleResourceContact;
+        _mover.DestinationReached -= HandleDestinationReached;
     }
 
     public void Initialize(BaseStorage homeBaseStorage)
@@ -47,19 +44,22 @@ public class Unit : MonoBehaviour
         _mover.SetDestination(_targetResource.transform.position);
     }
 
-    private void HandleResourceContact(Resource resource)
+    private void HandleDestinationReached()
     {
-        if (_currentState != UnitState.MovingToResource)
+        switch (_currentState)
         {
-            return;
-        }
+            case UnitState.MovingToResource:
+                PickUpResource();
+                break;
 
-        if (resource != _targetResource)
-        {
-            return;
-        }
+            case UnitState.ReturningToBase:
+                DeliverResource();
+                break;
 
-        PickUpResource();
+            default:
+                ResetToIdle();
+                break;
+        }
     }
 
     private void PickUpResource()
@@ -69,20 +69,12 @@ public class Unit : MonoBehaviour
         _mover.SetDestination(_assignedStorage.transform.position, _assignedStorage.DeliveryRadius);
     }
 
-    private void Update()
-    {
-        if (_currentState == UnitState.ReturningToBase && _mover.HasReachedDestination())
-        {
-            DeliverResource();
-        }
-    }
-
     private void DeliverResource()
     {
         _targetResource.Collect();
-        
         _assignedStorage.AddResource();
-        _assignedStorage.RemoveResourceFromMap(_targetResource);
+
+        ResourceDelivered?.Invoke(_targetResource);
         _targetResource = null;
 
         ResetToIdle();
@@ -92,6 +84,6 @@ public class Unit : MonoBehaviour
     {
         _currentState = UnitState.Idle;
         _mover.Stop();
-        UnitBecameFree?.Invoke(this);
+        BecameFree?.Invoke(this);
     }
 }

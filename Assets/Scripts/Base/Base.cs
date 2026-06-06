@@ -5,6 +5,8 @@ using UnityEngine;
 public class Base : MonoBehaviour
 {
     [SerializeField] private BaseStorage _storage;
+    [SerializeField] private UnitRegistry _unitRegistry;
+    [SerializeField] private ResourceRegistry _resourceRegistry;
     [SerializeField] private UnitSpawner _unitSpawner;
     [SerializeField] private BaseScanner _scanner;
 
@@ -16,17 +18,18 @@ public class Base : MonoBehaviour
     private void OnEnable()
     {
         _scanner.ResourcesDiscovered += HandleResourcesDiscovered;
-        _storage.UnitRegistered += HandleUnitRegistered;
+        _unitRegistry.Registered += HandleUnitRegistered;
     }
 
     private void OnDisable()
     {
         _scanner.ResourcesDiscovered -= HandleResourcesDiscovered;
-        _storage.UnitRegistered -= HandleUnitRegistered;
+        _unitRegistry.Registered -= HandleUnitRegistered;
 
-        foreach (var unit in _storage.AllUnits)
+        foreach (var unit in _unitRegistry.AllUnits)
         {
-            unit.UnitBecameFree -= HandleUnitBecameFree;
+            unit.BecameFree -= HandleUnitBecameFree;
+            unit.ResourceDelivered -= HandleResourceDelivered;
         }
     }
 
@@ -47,13 +50,14 @@ public class Base : MonoBehaviour
     private void CreateAndRegisterUnit()
     {
         Unit newUnit = _unitSpawner.Spawn();
-        _storage.RegisterUnit(newUnit);
+        _unitRegistry.Register(newUnit);
     }
 
     private void HandleUnitRegistered(Unit unit)
     {
         unit.Initialize(_storage);
-        unit.UnitBecameFree += HandleUnitBecameFree;
+        unit.BecameFree += HandleUnitBecameFree;
+        unit.ResourceDelivered += HandleResourceDelivered;
         _freeUnits.Add(unit);
     }
 
@@ -61,7 +65,7 @@ public class Base : MonoBehaviour
     {
         foreach (var resource in resources)
         {
-            _storage.RegisterFoundResource(resource);
+            _resourceRegistry.Register(resource);
         }
     }
 
@@ -71,6 +75,11 @@ public class Base : MonoBehaviour
         {
             _freeUnits.Add(unit);
         }
+    }
+
+    private void HandleResourceDelivered(Resource resource)
+    {
+        _resourceRegistry.Unregister(resource);
     }
 
     private IEnumerator DispatchRoutine()
@@ -88,7 +97,7 @@ public class Base : MonoBehaviour
     {
         while (_freeUnits.Count > 0)
         {
-            Resource resource = _storage.GetTargetResourceForUnit();
+            Resource resource = _resourceRegistry.GetTarget();
 
             if (resource == null)
             {
