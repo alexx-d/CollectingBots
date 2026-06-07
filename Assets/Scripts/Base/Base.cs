@@ -77,6 +77,13 @@ public class Base : MonoBehaviour
         CheckEconomyRequirements();
     }
 
+    public void ResetFlag()
+    {
+        _flag.Clear();
+        _currentPriority = BasePriority.BuildUnits;
+        CheckEconomyRequirements();
+    }
+
     private void CreateAndRegisterUnit()
     {
         Unit newUnit = _unitSpawner.Spawn();

@@ -40,7 +40,15 @@ public class BaseInteraction : MonoBehaviour
 
         if (hitObject.TryGetComponent(out Base clickedBase))
         {
-            SelectBase(clickedBase);
+            if (_selectedBase == clickedBase)
+            {
+                _selectedBase.ResetFlag();
+                DeselectCurrent();
+            }
+            else
+            {
+                SelectBase(clickedBase);
+            }
             return;
         }
 
