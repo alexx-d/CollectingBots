@@ -6,7 +6,7 @@ using UnityEngine;
 public class BaseScanner : MonoBehaviour
 {
     [SerializeField] private float _scanRadius = 50f;
-    [SerializeField] private float _scanInterval = 1f;
+    [SerializeField] private float _scanInterval = 5f;
     [SerializeField] private LayerMask _resourceLayer;
     [SerializeField] private int _maxScanResults = 30;
 
@@ -14,6 +14,8 @@ public class BaseScanner : MonoBehaviour
     private readonly List<Resource> _discoveredResources = new List<Resource>();
 
     public event Action<List<Resource>> ResourcesDiscovered;
+
+    public Func<bool> CanScanPredicate;
 
     private void Awake()
     {
@@ -32,7 +34,11 @@ public class BaseScanner : MonoBehaviour
         while (enabled)
         {
             yield return wait;
-            Scan();
+
+            if (CanScanPredicate == null || CanScanPredicate.Invoke())
+            {
+                Scan();
+            }
         }
     }
 

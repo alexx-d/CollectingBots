@@ -8,6 +8,11 @@ public class ResourceSpawner : MonoBehaviour
     [SerializeField] private float _spawnInterval;
     [SerializeField] private float _spawnHeightY = 0.5f;
 
+    [SerializeField] private float _minScaleMultiplier = 0.8f;
+    [SerializeField] private float _maxScaleMultiplier = 1.2f;
+    [SerializeField] private float _minRotationAngle = 0f;
+    [SerializeField] private float _maxRotationAngle = 360f;
+
     private void Start()
     {
         StartCoroutine(SpawnRoutine());
@@ -30,8 +35,12 @@ public class ResourceSpawner : MonoBehaviour
 
         Resource resource = _pool.Get();
         resource.transform.position = spawnPosition;
-        resource.transform.rotation = Quaternion.identity;
-        resource.PrepareForSpawn();
+
+        float randomAngleY = Random.Range(_minRotationAngle, _maxRotationAngle);
+        resource.transform.rotation = Quaternion.Euler(0f, randomAngleY, 0f);
+
+        float randomScaleMultiplier = Random.Range(_minScaleMultiplier, _maxScaleMultiplier);
+        resource.transform.localScale = Vector3.one * randomScaleMultiplier;
 
         resource.ResourceCollected += HandleResourceCollected;
     }

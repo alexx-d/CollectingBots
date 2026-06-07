@@ -21,12 +21,14 @@ public class Unit : MonoBehaviour
 
     public void AssignResource(Resource resource)
     {
-        if (_currentRoutine != null)
-        {
-            StopCoroutine(_currentRoutine);
-        }
-
+        StopCurrentRoutine();
         _currentRoutine = StartCoroutine(ProcessDeliveryRoutine(resource));
+    }
+
+    public void AssignBuildOrder(Vector3 buildPosition, Action<Vector3, Unit> onArrival)
+    {
+        StopCurrentRoutine();
+        _currentRoutine = StartCoroutine(ProcessBuildRoutine(buildPosition, onArrival));
     }
 
     private IEnumerator ProcessDeliveryRoutine(Resource resource)
@@ -42,6 +44,23 @@ public class Unit : MonoBehaviour
         ResourceDelivered?.Invoke(resource);
 
         ResetToIdle();
+    }
+
+    private IEnumerator ProcessBuildRoutine(Vector3 buildPosition, Action<Vector3, Unit> onArrival)
+    {
+        yield return _mover.MoveTo(buildPosition);
+
+        _currentRoutine = null;
+
+        onArrival?.Invoke(buildPosition, this);
+    }
+
+    private void StopCurrentRoutine()
+    {
+        if (_currentRoutine != null)
+        {
+            StopCoroutine(_currentRoutine);
+        }
     }
 
     private void ResetToIdle()

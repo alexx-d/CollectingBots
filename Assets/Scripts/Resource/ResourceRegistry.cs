@@ -3,39 +3,35 @@ using UnityEngine;
 
 public class ResourceRegistry : MonoBehaviour
 {
-    private readonly HashSet<Resource> _availableResources = new HashSet<Resource>();
-    private readonly HashSet<Resource> _reservedResources = new HashSet<Resource>();
+    private readonly List<Resource> _targets = new List<Resource>();
+    private GlobalResourceRegistry _globalRegistry;
 
-    public void Register(Resource resource)
+    public int QueuedCount => _targets.Count;
+
+    public void Initialize(GlobalResourceRegistry globalRegistry)
     {
-        if (!_availableResources.Contains(resource) && !_reservedResources.Contains(resource))
+        _globalRegistry = globalRegistry;
+    }
+
+    public void AddResources(List<Resource> resources)
+    {
+        foreach (var resource in resources)
         {
-            _availableResources.Add(resource);
+            if (_globalRegistry.TryRegister(resource))
+            {
+                _targets.Add(resource);
+            }
         }
     }
 
-    public Resource GetTarget()
+    public Resource GetResource()
     {
-        if (_availableResources.Count == 0)
+        if (_targets.Count > 0)
         {
-            return null;
+            Resource target = _targets[0];
+            _targets.RemoveAt(0);
+            return target;
         }
-
-        using var enumerator = _availableResources.GetEnumerator();
-        enumerator.MoveNext();
-        Resource target = enumerator.Current;
-
-        _availableResources.Remove(target);
-        _reservedResources.Add(target);
-
-        return target;
-    }
-
-    public void Unregister(Resource resource)
-    {
-        if (_reservedResources.Contains(resource))
-        {
-            _reservedResources.Remove(resource);
-        }
+        return null;
     }
 }

@@ -10,7 +10,7 @@ public class BaseResourceUI : MonoBehaviour
     {
         _storage.ResourceCountChanged += UpdateText;
 
-        UpdateText(_storage.ResourceCount);
+        UpdateText();
     }
 
     private void OnDisable()
@@ -18,8 +18,8 @@ public class BaseResourceUI : MonoBehaviour
         _storage.ResourceCountChanged -= UpdateText;
     }
 
-    private void UpdateText(int currentResources)
+    private void UpdateText()
     {
-        _counterText.text = currentResources.ToString();
+        _counterText.text = _storage.ResourceCount.ToString();
     }
 }

@@ -1,53 +1,80 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Base : MonoBehaviour
 {
+    private enum BasePriority
+    {
+        BuildUnits,
+        BuildBase
+    }
+
+    [SerializeField] private BaseScanner _scanner;
     [SerializeField] private BaseStorage _storage;
     [SerializeField] private UnitRegistry _unitRegistry;
     [SerializeField] private ResourceRegistry _resourceRegistry;
+    [SerializeField] private BaseLogistics _logistics;
     [SerializeField] private UnitSpawner _unitSpawner;
-    [SerializeField] private BaseScanner _scanner;
+    [SerializeField] private BaseColorizer _colorizer;
+    [SerializeField] private BaseFlag _flag;
 
     [SerializeField] private int _initialUnitCount = 3;
     [SerializeField] private int _unitCost = 3;
-    [SerializeField] private float _dispatchInterval = 0.2f;
+    [SerializeField] private int _baseCost = 5;
 
-    private readonly List<Unit> _freeUnits = new List<Unit>();
+    private GlobalResourceRegistry _globalRegistry;
+    private Action<Vector3, Unit> _onBaseBuildRequested;
+    private BasePriority _currentPriority = BasePriority.BuildUnits;
+
+    private bool _isScanningPaused = false;
 
     private void OnEnable()
     {
-        _scanner.ResourcesDiscovered += HandleResourcesDiscovered;
         _unitRegistry.Registered += HandleUnitRegistered;
-        _storage.ResourceCountChanged += HandleResourceCountChanged;
+        _unitRegistry.AnyUnitBecameFree += HandleUnitBecameFree;
+        _unitRegistry.AnyUnitResourceDelivered += HandleResourceDelivered;
+
+        _scanner.ResourcesDiscovered += HandleResourcesDiscovered;
     }
 
     private void OnDisable()
     {
-        _scanner.ResourcesDiscovered -= HandleResourcesDiscovered;
         _unitRegistry.Registered -= HandleUnitRegistered;
-        _storage.ResourceCountChanged -= HandleResourceCountChanged;
+        _unitRegistry.AnyUnitBecameFree -= HandleUnitBecameFree;
+        _unitRegistry.AnyUnitResourceDelivered -= HandleResourceDelivered;
 
-        foreach (var unit in _unitRegistry.AllUnits)
-        {
-            unit.BecameFree -= HandleUnitBecameFree;
-            unit.ResourceDelivered -= HandleResourceDelivered;
-        }
+        _scanner.ResourcesDiscovered -= HandleResourcesDiscovered;
     }
 
-    private void Start()
+    public void Initialize(GlobalResourceRegistry globalRegistry, Action<Vector3, Unit> onBaseBuildRequested)
     {
-        InitializeInitialUnits();
-        StartCoroutine(DispatchRoutine());
+        _globalRegistry = globalRegistry;
+        _onBaseBuildRequested = onBaseBuildRequested;
+
+        _resourceRegistry.Initialize(globalRegistry);
+
+        _logistics.Initialize(_resourceRegistry.GetResource);
+
+        _colorizer.GenerateAndApplyColor();
+
+        _scanner.CanScanPredicate = EvaluateCanScan;
     }
 
-    private void InitializeInitialUnits()
+    public void SpawnInitialUnits()
     {
         for (int i = 0; i < _initialUnitCount; i++)
         {
             CreateAndRegisterUnit();
         }
+    }
+
+    public void SetFlag(Vector3 position)
+    {
+        _flag.Set(position);
+        _currentPriority = BasePriority.BuildBase;
+        CheckEconomyRequirements();
     }
 
     private void CreateAndRegisterUnit()
@@ -56,70 +83,81 @@ public class Base : MonoBehaviour
         _unitRegistry.Register(newUnit);
     }
 
+    public void RegisterUnit(Unit unit)
+    {
+        _unitRegistry.Register(unit);
+    }
+
+    private bool EvaluateCanScan()
+    {
+        int queuedResources = _resourceRegistry.QueuedCount;
+        int totalUnits = _unitRegistry.AllUnits.Count;
+
+        if (_isScanningPaused == false && queuedResources > totalUnits)
+        {
+            _isScanningPaused = true;
+        }
+        else if (_isScanningPaused && queuedResources == 0)
+        {
+            _isScanningPaused = false;
+        }
+
+        return _isScanningPaused == false;
+    }
+
     private void HandleUnitRegistered(Unit unit)
     {
         unit.Initialize(_storage);
-        unit.BecameFree += HandleUnitBecameFree;
-        unit.ResourceDelivered += HandleResourceDelivered;
-        _freeUnits.Add(unit);
-    }
+        _colorizer.ColorizeUnit(unit);
 
-    private void HandleResourcesDiscovered(List<Resource> resources)
-    {
-        foreach (var resource in resources)
-        {
-            _resourceRegistry.Register(resource);
-        }
+        _logistics.AddFreeUnit(unit);
     }
 
     private void HandleUnitBecameFree(Unit unit)
     {
-        if (_freeUnits.Contains(unit) == false)
-        {
-            _freeUnits.Add(unit);
-        }
+        _logistics.AddFreeUnit(unit);
+
+        CheckEconomyRequirements();
     }
 
     private void HandleResourceDelivered(Resource resource)
     {
-        _resourceRegistry.Unregister(resource);
+        _globalRegistry.Unregister(resource);
     }
 
-    private void HandleResourceCountChanged(int currentCount)
+    private void HandleResourcesDiscovered(List<Resource> resources)
     {
-        if (currentCount >= _unitCost)
+        _resourceRegistry.AddResources(resources);
+    }
+
+    private void CheckEconomyRequirements()
+    {
+        int currentResources = _storage.ResourceCount;
+
+        if (_currentPriority == BasePriority.BuildBase && currentResources >= _baseCost && _unitRegistry.AllUnits.Count > 1)
+        {
+            if (_logistics.TryExtractFreeUnit(out Unit builder))
+            {
+                _storage.SpendResources(_baseCost);
+                _unitRegistry.Unregister(builder);
+
+                Vector3 targetPosition = _flag.Position;
+                _flag.Clear();
+
+                _currentPriority = BasePriority.BuildUnits;
+
+                builder.AssignBuildOrder(targetPosition, SendBuildRequest);
+            }
+        }
+        else if (_currentPriority == BasePriority.BuildUnits && currentResources >= _unitCost)
         {
             _storage.SpendResources(_unitCost);
             CreateAndRegisterUnit();
         }
     }
 
-    private IEnumerator DispatchRoutine()
+    private void SendBuildRequest(Vector3 position, Unit builder)
     {
-        var wait = new WaitForSeconds(_dispatchInterval);
-
-        while (enabled)
-        {
-            yield return wait;
-            TryAssignCommands();
-        }
-    }
-
-    private void TryAssignCommands()
-    {
-        while (_freeUnits.Count > 0)
-        {
-            Resource resource = _resourceRegistry.GetTarget();
-
-            if (resource == null)
-            {
-                break;
-            }
-
-            Unit unit = _freeUnits[0];
-            _freeUnits.RemoveAt(0);
-
-            unit.AssignResource(resource);
-        }
+        _onBaseBuildRequested?.Invoke(position, builder);
     }
 }
